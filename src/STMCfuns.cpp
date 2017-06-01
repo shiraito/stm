@@ -1,8 +1,10 @@
-// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::depends(RcppArmadillo,RcppEigen)]]
 
+#include <time.h>
 #include "RcppArmadillo.h"
+#include "RcppEigen.h"
 
-// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::depends(RcppArmadillo,RcppEigen)]]
 
 // [[Rcpp::export]]
 double lhoodcpp(SEXP eta,
@@ -110,6 +112,7 @@ SEXP hpbcpp(SEXP eta,
    //  - Hypothetically we could alter beta (because hessian is last thing we do) however down
    //    the road we may want to explore treating nonPD hessians by optimization at which point
    //    we would need it again.
+
    
    arma::colvec expeta(etas.size()+1); 
    expeta.fill(1);
@@ -119,6 +122,11 @@ SEXP hpbcpp(SEXP eta,
    }
    arma::vec theta = expeta/sum(expeta);
 
+
+   // profiling
+   clock_t start = clock();
+   clock_t end = clock();
+   
    //create a new version of the matrix so we can mess with it
    arma::mat EB(betam.begin(), betam.nrow(), betam.ncol());
    //multiply each column by expeta
@@ -128,11 +136,30 @@ SEXP hpbcpp(SEXP eta,
    EB.each_row() %= arma::trans(sqrt(doc_cts))/sum(EB,0);
     
    //Combine the pieces of the Hessian which are matrices
-   arma::mat hess = EB*EB.t() - sum(doc_cts)*(theta*theta.t());
+   start = clock();
+   double sum_doc_cts = sum(doc_cts);
+   end = clock();
+   Rcpp::Rcout << "double sum_doc_cts = sum(doc_cts): " << (double)(end - start) / CLOCKS_PER_SEC << "secs" << std::endl;
+   start = clock();
+   arma::mat hess = EB*EB.t();
+   end = clock();
+   Rcpp::Rcout << "arma::mat hess = EB*EB.t(): " << (double)(end - start) / CLOCKS_PER_SEC << "secs" << std::endl;
+   start = clock();
+   arma::mat crossprod_theta = theta*theta.t();
+   end = clock();
+   Rcpp::Rcout << "arma::mat crossprod_theta = theta*theta.t(): " << (double)(end - start) / CLOCKS_PER_SEC << "secs" << std::endl;
+   start = clock();
+   crossprod_theta *= sum_doc_cts;
+   end = clock();
+   Rcpp::Rcout << "crossprod_theta *= sum_doc_cts: " << (double)(end - start) / CLOCKS_PER_SEC << "secs" << std::endl;
+   start = clock();
+   hess -= crossprod_theta;
+   end = clock();
+   Rcpp::Rcout << "hess -= crossprod_theta: " << (double)(end - start) / CLOCKS_PER_SEC << "secs" << std::endl << std::endl;
   
    //we don't need EB any more so we turn it into phi
    EB.each_row() %= arma::trans(sqrt(doc_cts));
-   
+
    //Now alter just the diagonal of the Hessian
    hess.diag() -= sum(EB,1) - sum(doc_cts)*theta;
    //Drop the last row and column
@@ -141,6 +168,7 @@ SEXP hpbcpp(SEXP eta,
    //Now we can add in siginv
    hess = hess + siginvs;
    //At this point the Hessian is complete.
+
    
    //This next bit of code is from http://arma.sourceforge.net/docs.html#logging
    //It basically keeps arma from printing errors from chol to the console.
@@ -158,7 +186,7 @@ SEXP hpbcpp(SEXP eta,
      //It failed!  Oh Nos.
      // So the matrix wasn't positive definite.  In practice this means that it hasn't
      // converged probably along some minor aspect of the dimension.
-     
+
      //Here we make it positive definite through diagonal dominance
      arma::vec dvec = hess.diag();
      //find the magnitude of the diagonal 
@@ -172,10 +200,11 @@ SEXP hpbcpp(SEXP eta,
      hess.diag() = dvec;
      //that was sufficient to ensure positive definiteness so we now do cholesky
      nu = arma::chol(hess);
+
    }
    //compute 1/2 the determinant from the cholesky decomposition
    double detTerm = -sum(log(nu.diag()));
-   
+
    //Now finish constructing nu
    nu = arma::inv(arma::trimatu(nu));
    nu = nu * nu.t(); //trimatu doesn't do anything for multiplication so it would just be timesink to signal here.
@@ -183,8 +212,8 @@ SEXP hpbcpp(SEXP eta,
    //Precompute the difference since we use it twice
    arma::vec diff = etas - mus;
    //Now generate the bound and make it a scalar
-   double bound = arma::as_scalar(log(arma::trans(theta)*betas)*doc_cts + detTerm - .5*diff.t()*siginvs*diff - entropy); 
-   
+   double bound = arma::as_scalar(log(arma::trans(theta)*betas)*doc_cts + detTerm - .5*diff.t()*siginvs*diff - entropy);
+
    // Generate a return list that mimics the R output
    return Rcpp::List::create(
         Rcpp::Named("phis") = EB,
