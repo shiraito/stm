@@ -185,6 +185,9 @@ Rcpp::List estep_loop(Rcpp::List documents
     SEXP l_beta = beta[aspect];
     mat beta_mat = as<mat>(l_beta);
     mat beta_i = beta_mat.cols(words);
+
+    NumericVector doc_ct = doc(2, _);
+    int Ndoc = sum(doc_ct);
     
   }
   
