@@ -1,8 +1,10 @@
 // [[Rcpp::depends(RcppArmadillo,RcppEigen)]]
+// [[Rcpp::depends(RcppNumerical)]]
 
 #include <time.h>
 #include "RcppArmadillo.h"
 #include "RcppEigen.h"
+#include <RcppNumerical.h>
 
 // [[Rcpp::depends(RcppArmadillo,RcppEigen)]]
 
@@ -159,6 +161,31 @@
 //         );
 // }
 
+using namespace Numer;
+using namespace Rcpp;
+using namespace arma;
+
+class STMfun: public MfuncGrad
+{
+private:
+  const NumericVector mu_i;
+  const mat betas;
+  const NumericVector doc_ct;
+  const NumericMatrix siginvm;
+public:
+  STMfun(const NumericVector _mu_i, const mat _beta_i
+	 ,const NumericVector _doc_ct
+	 ,const double _siginv) : mu_i(_mu_i), betas(_beta_i), doc_ct(_doc_ct), siginvm(_siginv) {}
+  
+  double f_grad(Constvec& eta, Refvec grad)
+  {
+    vec etas(eta.size());
+    vec doc_cts(doc_ct.begin(), doc_ct.size(), false);
+    vec mus(mu_i.begin(), mu_i.size(), false);
+    mat siginvs(siginvm.begin(), siginvm.nrow(), siginvm.ncol(), false);
+    
+  }
+};
 
 // [[Rcpp::export]]
 Rcpp::List estep_loop(Rcpp::List documents
@@ -167,10 +194,9 @@ Rcpp::List estep_loop(Rcpp::List documents
 		      ,Rcpp::NumericMatrix mu
 		      ,bool update_mu
 		      ,Rcpp::List beta
+		      ,Rcpp::NumericMatrix siginv
+		      ,double sigmaentropy
 		      ){
-
-  using namespace Rcpp;
-  using namespace arma;
 
   int N = documents.size();
 
@@ -188,6 +214,8 @@ Rcpp::List estep_loop(Rcpp::List documents
 
     NumericVector doc_ct = doc(2, _);
     int Ndoc = sum(doc_ct);
+    
+    STMfun nll(mu_i, beta_i, doc_ct, siginv);
     
   }
   
