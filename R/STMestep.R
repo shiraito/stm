@@ -28,12 +28,15 @@ estep <- function(documents, beta.index, update.mu, #null allows for intercept o
   
   # 1) Initialize Sufficient Statistics 
   sigma.ss <- diag(0, nrow=(K-1))
-  beta.ss <- vector(mode="list", length=A)
-  for(i in 1:A) {
-    beta.ss[[i]] <- matrix(0, nrow=K,ncol=V)
-  }
+  ## beta.ss <- vector(mode="list", length=A)
+  ## for(i in 1:A) {
+  ##   beta.ss[[i]] <- matrix(0, nrow=K,ncol=V)
+  ## }
+  beta.ss <- array(0, c(K, V, A))
   bound <- vector(length=N)
-  lambda <- vector("list", length=N)
+  ## lambda <- vector("list", length=N)
+  lambda <- matrix(0, nrow = nrow(lambda.old),
+                   ncol = ncol(lambda.old))
   
   # 2) Precalculate common components
   sigobj <- try(chol.default(sigma), silent=TRUE)
@@ -47,30 +50,44 @@ estep <- function(documents, beta.index, update.mu, #null allows for intercept o
   # 3) Document Scheduling
   # For right now we are just doing everything in serial.
   # the challenge with multicore is efficient scheduling while
-  # maintaining a small dimension for the sufficient statistics.
-  for(i in 1:N) {
-    #update components
-    doc <- documents[[i]]
-    words <- doc[1,]
-    aspect <- beta.index[i]
-    init <- lambda.old[i,]
-    if(update.mu) mu.i <- mu[,i]
-    beta.i <- beta[[aspect]][,words,drop=FALSE]
+                                        # maintaining a small dimension for the sufficient statistics.
+
+    out.loop <- estep_loop(documents, beta.index, lambda.old
+                         , mu, update.mu, beta, siginv
+                         , sigmaentropy, sigma.ss, beta.ss
+                         , bound, lambda)
+  ## for(i in 1:N) {
+  ##   #update components
+  ##   doc <- documents[[i]]
+  ##   words <- doc[1,]
+  ##   aspect <- beta.index[i]
+  ##   init <- lambda.old[i,]
+  ##   if(update.mu) mu.i <- mu[,i]
+  ##   beta.i <- beta[[aspect]][,words,drop=FALSE]
     
-    #infer the document
-    doc.results <- logisticnormalcpp(eta=init, mu=mu.i, siginv=siginv, beta=beta.i, 
-                                  doc=doc, sigmaentropy=sigmaentropy)
+  ##   #infer the document
+  ##   doc.results <- logisticnormalcpp(eta=init, mu=mu.i, siginv=siginv, beta=beta.i, 
+  ##                                 doc=doc, sigmaentropy=sigmaentropy)
     
-    # update sufficient statistics 
-    sigma.ss <- sigma.ss + doc.results$eta$nu
-    beta.ss[[aspect]][,words] <- doc.results$phis + beta.ss[[aspect]][,words]
-    bound[i] <- doc.results$bound
-    lambda[[i]] <- c(doc.results$eta$lambda)
-    if(verbose && i%%ctevery==0) cat(".")
+  ##   # update sufficient statistics 
+  ##   sigma.ss <- sigma.ss + doc.results$eta$nu
+  ##   beta.ss[[aspect]][,words] <- doc.results$phis + beta.ss[[aspect]][,words]
+  ##   bound[i] <- doc.results$bound
+  ##   lambda[[i]] <- c(doc.results$eta$lambda)
+  ##   if(verbose && i%%ctevery==0) cat(".")
+  ## }
+    if(verbose) cat("\n") #add a line break for the next message.
+    
+  beta.ss <- vector(mode="list", length=A)
+  for(i in 1:A) {
+    beta.ss[[i]] <- out.loop$beta_ss[, , i]
   }
-  if(verbose) cat("\n") #add a line break for the next message.
   
   #4) Combine and Return Sufficient Statistics
-  lambda <- do.call(rbind, lambda)
-  return(list(sigma=sigma.ss, beta=beta.ss, bound=bound, lambda=lambda))
+  ## lambda <- do.call(rbind, lambda)
+    ## return(list(sigma=sigma.ss, beta=beta.ss, bound=bound, lambda=lambda))
+    return(list(sigma = out.loop$sigma_ss,
+                beta = beta.ss,
+                bound = out.loop$bound,
+                lambda = out.loop$lambda))
 }
