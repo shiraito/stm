@@ -13,3 +13,11 @@ hpbcpp <- function(eta, beta, doc_ct, mu, siginv, sigmaentropy) {
     .Call('stm_hpbcpp', PACKAGE = 'stm', eta, beta, doc_ct, mu, siginv, sigmaentropy)
 }
 
+estep_loop <- function(documents, beta_index, lambda, mu, update_mu, beta, siginv, sigmaentropy, N, V, K, A) {
+    .Call('stm_estep_loop', PACKAGE = 'stm', documents, beta_index, lambda, mu, update_mu, beta, siginv, sigmaentropy, N, V, K, A)
+}
+
+logistic_reg <- function(x, y) {
+    .Call('stm_logistic_reg', PACKAGE = 'stm', x, y)
+}
+

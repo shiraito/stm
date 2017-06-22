@@ -2,6 +2,7 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <RcppArmadillo.h>
+#include <RcppEigen.h>
 #include <Rcpp.h>
 
 using namespace Rcpp;
@@ -49,6 +50,40 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< SEXP >::type siginv(siginvSEXP);
     Rcpp::traits::input_parameter< SEXP >::type sigmaentropy(sigmaentropySEXP);
     rcpp_result_gen = Rcpp::wrap(hpbcpp(eta, beta, doc_ct, mu, siginv, sigmaentropy));
+    return rcpp_result_gen;
+END_RCPP
+}
+// estep_loop
+Rcpp::List estep_loop(Rcpp::List documents, Rcpp::IntegerVector beta_index, Rcpp::NumericMatrix lambda, Rcpp::NumericMatrix mu, bool update_mu, Rcpp::List beta, Rcpp::NumericMatrix siginv, Rcpp::NumericVector sigmaentropy, int N, int V, int K, int A);
+RcppExport SEXP stm_estep_loop(SEXP documentsSEXP, SEXP beta_indexSEXP, SEXP lambdaSEXP, SEXP muSEXP, SEXP update_muSEXP, SEXP betaSEXP, SEXP siginvSEXP, SEXP sigmaentropySEXP, SEXP NSEXP, SEXP VSEXP, SEXP KSEXP, SEXP ASEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type documents(documentsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type beta_index(beta_indexSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< bool >::type update_mu(update_muSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type siginv(siginvSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type sigmaentropy(sigmaentropySEXP);
+    Rcpp::traits::input_parameter< int >::type N(NSEXP);
+    Rcpp::traits::input_parameter< int >::type V(VSEXP);
+    Rcpp::traits::input_parameter< int >::type K(KSEXP);
+    Rcpp::traits::input_parameter< int >::type A(ASEXP);
+    rcpp_result_gen = Rcpp::wrap(estep_loop(documents, beta_index, lambda, mu, update_mu, beta, siginv, sigmaentropy, N, V, K, A));
+    return rcpp_result_gen;
+END_RCPP
+}
+// logistic_reg
+Rcpp::NumericVector logistic_reg(Rcpp::NumericMatrix x, Rcpp::NumericVector y);
+RcppExport SEXP stm_logistic_reg(SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(logistic_reg(x, y));
     return rcpp_result_gen;
 END_RCPP
 }

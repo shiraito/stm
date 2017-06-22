@@ -27,16 +27,13 @@ estep <- function(documents, beta.index, update.mu, #null allows for intercept o
   if(!update.mu) mu.i <- as.numeric(mu)
   
   # 1) Initialize Sufficient Statistics 
-  sigma.ss <- diag(0, nrow=(K-1))
+  ## sigma.ss <- diag(0, nrow=(K-1))
   ## beta.ss <- vector(mode="list", length=A)
   ## for(i in 1:A) {
   ##   beta.ss[[i]] <- matrix(0, nrow=K,ncol=V)
   ## }
-  beta.ss <- array(0, c(K, V, A))
-  bound <- vector(length=N)
+  ## bound <- vector(length=N)
   ## lambda <- vector("list", length=N)
-  lambda <- matrix(0, nrow = nrow(lambda.old),
-                   ncol = ncol(lambda.old))
   
   # 2) Precalculate common components
   sigobj <- try(chol.default(sigma), silent=TRUE)
@@ -50,12 +47,12 @@ estep <- function(documents, beta.index, update.mu, #null allows for intercept o
   # 3) Document Scheduling
   # For right now we are just doing everything in serial.
   # the challenge with multicore is efficient scheduling while
-                                        # maintaining a small dimension for the sufficient statistics.
+  # maintaining a small dimension for the sufficient statistics.
 
     out.loop <- estep_loop(documents, beta.index, lambda.old
                          , mu, update.mu, beta, siginv
-                         , sigmaentropy, sigma.ss, beta.ss
-                         , bound, lambda)
+                         , sigmaentropy
+                         , N, V, K, A)
   ## for(i in 1:N) {
   ##   #update components
   ##   doc <- documents[[i]]
